@@ -95,7 +95,7 @@ def problem_to_z_operator(problem, norm=False):
     >>> hamiltonian = qaoa.problem_to_z_operator(f)
     >>> print(hamiltonian)
         { qbit_total = 3, pauli_with_coef_s = { '':1 + 0j, 'Z2 ':-1.5 + 0j, 'Z1 ':-0.5 + 0j, 'Z0 ':-0.5 + 0j, 'Z0 Z1 ':0.5 + 0j, } }
-
+    
     """
     problem_symbols = list(sorted(problem.free_symbols, key=lambda symbol: symbol.name))
     operator_symbols = np.array([sp.Symbol('z%d' % i) for i in range(len(problem_symbols))])
