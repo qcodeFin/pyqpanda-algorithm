@@ -572,9 +572,37 @@ class QAOA:
             raise ValueError('CVaR method needs parameter alpha to be a number between 0~1')
         if self.alpha > 1 or self.alpha < 0:
             raise ValueError('CVaR method needs parameter alpha to be a number between 0~1')
+
+        total_counts = sum(measure_result.values())
         cdf = 0.
         loss = 0.
 
+        # 先计算所有结果的能量并缓存（提前算好，后面排序用）
+        for solution, hits in measure_result.items():
+            if solution not in self.energy_dict:
+                solution_list = [int(i) for i in solution[::-1]]
+                self.energy_dict[solution] = self.calculate_energy(solution_list)
+
+        # 【关键修改】按能量从高到低排序，而不是按出现次数
+        sorted_results = sorted(
+            measure_result.items(),
+            key=lambda item: self.energy_dict[item[0]],
+            reverse=True
+        )
+            # 按排序后的结果计算CVaR
+        for solution, hits in sorted_results:
+            prob = hits/total_counts
+            if cdf < self.alpha:
+                if cdf + prob < self.alpha:
+                    loss += self.energy_dict[solution] * prob
+                else:
+                    loss += self.energy_dict[solution] * (self.alpha - cdf)
+            cdf += prob
+    
+        # 记得归一化，除以alpha（原代码可能遗漏了这一步）
+        return loss / self.alpha
+
+        """
         measure_result = sorted(measure_result.items(), key=lambda k: k[1], reverse=True)
         for solution, hits in measure_result:
             if solution not in self.energy_dict:
@@ -588,7 +616,7 @@ class QAOA:
                     loss += self.energy_dict[solution] * (self.alpha - cdf)
                 cdf += prob
         return loss
-
+        """
     def _loss_function_Gibbs(self, measure_result):
         """
         Given a result, calculate the Gibbs energy expectation.
